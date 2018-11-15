@@ -1,0 +1,42 @@
+# C/C++ with GCC
+# Build your C/C++ project with GCC using make.
+# Add steps that publish test results, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/apps/c-cpp/gcc
+
+pool:
+  vmImage: 'vs2017-win2016'
+
+variables:
+  llvm_version: 6.0.0
+  llvm_hash: 2501887b2f638d3f65b0336f354b96f8108b563522d81e841d5c88c34af283dd
+  vcvarsall: 'C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvarsall.bat'
+  #qt_installer: http://master.qt.io/archive/online_installers/3.0/qt-unified-windows-x86-3.0.5-online.exe
+  #qt_hash: 93f0fc89c345b5663477b932037c28c3a9a3456a907b088dbce5bd2815710b9f
+  qt_installer: http://download.qt.io/official_releases/qt/5.11/5.11.2/qt-opensource-windows-x86-5.11.2.exe
+  qt_hash: 723F60CE5499458B92682C3878F2DB0E6C7756987F016C372EA2D34235275D9B
+  qt_prefix: 'D:\Qt\5.11.2\msvc2017_64\lib\cmake'
+
+steps:
+- powershell: |
+    Set-PSDebug -Trace 1
+    $wc = New-Object System.Net.WebClient
+    $wc.DownloadFile("https://releases.llvm.org/$env:LLVM_VERSION/LLVM-$env:LLVM_VERSION-win64.exe", "LLVM-$env:LLVM_VERSION-win64.exe")
+    scripts\check-sha256.ps1 LLVM-$env:LLVM_VERSION-win64.exe "$env:LLVM_HASH"
+    $wc.DownloadFile($env:QT_INSTALLER, "qt_installer.exe")
+    scripts\check-sha256.ps1 "qt_installer.exe" "$env:QT_HASH"
+  displayName: 'Download LLVM and Qt'
+- script: |
+    ".\LLVM-%LLVM_VERSION%-win64.exe" /S /D=D:\LLVM-%LLVM_VERSION%
+    ".\qt_installer.exe" --verbose --script ".\scripts\qt-install.run"
+    echo "Status: %errorlevel%"
+  displayName: 'Install LLVM and Qt'
+- script: |
+    set PATH=D:\LLVM-%LLVM_VERSION%\bin;%PATH%
+    set CC=clang-cl
+    set CXX=clang-cl
+    mkdir %BUILD_REPOSITORY_LOCALPATH%\build
+    cd %BUILD_REPOSITORY_LOCALPATH%\build
+    call "%VCVARSALL%" amd64
+    cmake -G "Ninja" -DMBGL_PLATFORM=qt -DWITH_QT_DECODERS=ON -DWITH_QT_I18N=ON -DWITH_NODEJS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%QT_PREFIX% -DCMAKE_MAKE_PROGRAM="%BUILD_REPOSITORY_LOCALPATH%\platform\qt\ninja.exe" ..
+    cmake --build . -- -j %NUMBER_OF_PROCESSORS%
+  displayName: 'Build'
