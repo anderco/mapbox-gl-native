@@ -70,6 +70,7 @@ steps:
     call "%VCVARSALL%" amd64
     cmake -G "Ninja" -DMBGL_PLATFORM=qt -DWITH_QT_DECODERS=ON -DWITH_QT_I18N=ON -DWITH_NODEJS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%QT_PREFIX% -DCMAKE_MAKE_PROGRAM="%BUILD_REPOSITORY_LOCALPATH%\platform\qt\ninja.exe" ..
     cmake --build . -- -j %NUMBER_OF_PROCESSORS%
+    clcache -s
   displayName: 'Build'
 - task: ArchiveFiles@2
   displayName: 'Archive cache'
