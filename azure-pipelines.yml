@@ -38,12 +38,13 @@ steps:
     if (!(Test-Path $env:QT_PREFIX)) {
         $wc.DownloadFile($env:QT_INSTALLER, "qt_installer.exe")
         scripts\check-sha256.ps1 "qt_installer.exe" "$env:QT_HASH"
-        & ".\qt_installer.exe" --verbose --script ".\scripts\qt-install.run"
+        #& ".\qt_installer.exe" --verbose --script ".\scripts\qt-install.run"
     }
 
     pip install clcache
   displayName: 'Install dependencies'
 - script: |
+    ".\qt_installer.exe" --verbose --script ".\scripts\qt-install.run"
     set PATH=D:\cache\LLVM-%LLVM_VERSION%\bin;%PATH%
     set CLCACHE_DIR=D:\cache\clcache
     set CLCACHE_CL=clang-cl
