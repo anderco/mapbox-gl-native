@@ -14,33 +14,38 @@ variables:
   #qt_hash: 93f0fc89c345b5663477b932037c28c3a9a3456a907b088dbce5bd2815710b9f
   qt_installer: http://download.qt.io/official_releases/qt/5.11/5.11.2/qt-opensource-windows-x86-5.11.2.exe
   qt_hash: 723F60CE5499458B92682C3878F2DB0E6C7756987F016C372EA2D34235275D9B
-  qt_prefix: 'D:\Qt\5.11.2\msvc2017_64\lib\cmake'
+  qt_prefix: 'D:\cache\Qt\5.11.2\msvc2017_64\lib\cmake'
 
 steps:
-- powershell: |
-    Set-PSDebug -Trace 1
-    $wc = New-Object System.Net.WebClient
-    $wc.DownloadFile("https://releases.llvm.org/$env:LLVM_VERSION/LLVM-$env:LLVM_VERSION-win64.exe", "LLVM-$env:LLVM_VERSION-win64.exe")
-    scripts\check-sha256.ps1 LLVM-$env:LLVM_VERSION-win64.exe "$env:LLVM_HASH"
-    $wc.DownloadFile($env:QT_INSTALLER, "qt_installer.exe")
-    scripts\check-sha256.ps1 "qt_installer.exe" "$env:QT_HASH"
-  displayName: 'Download LLVM and Qt'
-- script: |
-    ".\LLVM-%LLVM_VERSION%-win64.exe" /S /D=D:\LLVM-%LLVM_VERSION%
-    ".\qt_installer.exe" --verbose --script ".\scripts\qt-install.run"
-    echo "Status: %errorlevel%"
-    pip install clcache
-  displayName: 'Install dependencies'
 - task: DownloadBuildArtifacts@0
-  displayName: "Download clcache"
+  displayName: "Download cache"
   continueOnError: true
   inputs:
     buildType: 'current'
-    artifactName: 'clcache'
-    downloadPath: 'D:\clcache'
+    artifactName: 'cache'
+    downloadPath: 'D:\cache'
+- powershell: |
+    Set-PSDebug -Trace 1
+    $wc = New-Object System.Net.WebClient
+
+    $llvm_path = "D:\cache\LLVM-$env:LLVM_VERSION"
+    if (!(Test-Path $llvm_path)) {
+        $wc.DownloadFile("https://releases.llvm.org/$env:LLVM_VERSION/LLVM-$env:LLVM_VERSION-win64.exe", "LLVM-$env:LLVM_VERSION-win64.exe")
+        scripts\check-sha256.ps1 LLVM-$env:LLVM_VERSION-win64.exe "$env:LLVM_HASH"
+        & ".\LLVM-$env:LLVM_VERSION-win64.exe" /S /D=$llvm_path
+    }
+
+    if (!(Test-Path $env:QT_PREFIX)) {
+        $wc.DownloadFile($env:QT_INSTALLER, "qt_installer.exe")
+        scripts\check-sha256.ps1 "qt_installer.exe" "$env:QT_HASH"
+        & ".\qt_installer.exe" --verbose --script ".\scripts\qt-install.run"
+    }
+
+    pip install clcache
+  displayName: 'Install dependencies'
 - script: |
-    set PATH=D:\LLVM-%LLVM_VERSION%\bin;%PATH%
-    set CLCACHE_DIR=D:\clcache
+    set PATH=D:\cache\LLVM-%LLVM_VERSION%\bin;%PATH%
+    set CLCACHE_DIR=D:\cache\clcache
     set CLCACHE_CL=clang-cl
     set CC=clcache
     set CXX=clcache
@@ -51,8 +56,8 @@ steps:
     cmake --build . -- -j %NUMBER_OF_PROCESSORS%
   displayName: 'Build'
 - task: PublishBuildArtifacts@1
-  displayName: 'Publish clcache archive'
+  displayName: 'Publish cache archive'
   inputs:
-    pathtoPublish: 'D:\clcache'
-    artifactName: 'clcache'
+    pathtoPublish: 'D:\cache'
+    artifactName: 'cache'
     publishLocation: 'Container'
