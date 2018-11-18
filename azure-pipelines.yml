@@ -26,14 +26,14 @@ steps:
     project: $(System.TeamProjectId)
     pipeline: $(System.DefinitionId)
     buildVersionToDownload: "latest"
-    artifactName: 'cache'
+    artifactName: 'clcache'
     downloadPath: 'D:\artifacts'
 - task: ExtractFiles@1
   displayName: 'Unzip cache'
   continueOnError: true
   inputs:
-    archiveFilePatterns: 'D:\artifacts\cache\*.zip'
-    detinationFolder: 'D:\cache'
+    archiveFilePatterns: 'D:\artifacts\clcache\*.zip'
+    detinationFolder: 'D:\cache\clcache'
 # Ignore cache download issues
 - script: |
     echo '##vso[task.setvariable variable=agent.jobstatus]Succeeded'
@@ -75,13 +75,13 @@ steps:
 - task: ArchiveFiles@2
   displayName: 'Archive cache'
   inputs:
-    rootFolderOrFile: 'D:\cache'
+    rootFolderOrFile: 'D:\cache\clcache'
     includeRootFolder: false
     archiveType: zip
-    archiveFile: 'D:\cache.zip'
+    archiveFile: 'D:\clcache.zip'
 - task: PublishBuildArtifacts@1
   displayName: 'Publish cache archive'
   inputs:
-    pathtoPublish: 'D:\cache.zip'
-    artifactName: 'cache'
+    pathtoPublish: 'D:\clcache.zip'
+    artifactName: 'clcache'
     publishLocation: 'Container'
