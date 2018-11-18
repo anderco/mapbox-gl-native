@@ -23,6 +23,7 @@ steps:
   continueOnError: true
   inputs:
     buildType: 'specific'
+    specificBuildWithTriggering: true
     project: $(System.TeamProjectId)
     pipeline: $(System.DefinitionId)
     buildVersionToDownload: "latest"
